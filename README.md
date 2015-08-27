@@ -14,12 +14,12 @@ Available functions:
 * UpdateTask
 * ListTasks
 
-**GoDO** use MongoDB NoSQL database as storage for users and tasks. Users and tasks will be stored in Users collections where each task will be stored in User object per user for easy quering. Future optimizations will be made.
+**GoDO** use MongoDB NoSQL database as storage for users and tasks. Users and tasks will be stored as separate collections where each task will be connected thru User ID for easy quering. Future optimizations will be made.
 
 ## Building
 **GoDO** is tested on Mac OSx 10.10.5
 
-	go get
+	go get labix.org/v2/mgo
 	go build
 
 ## Running

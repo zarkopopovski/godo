@@ -2,21 +2,22 @@ package main
 
 import (
 	"fmt"
+	"gopkg.in/mgo.v2/bson"
 	"time"
 )
 
 type Connection struct {
-	Connection_ID string    `json:"connection_id"`
-	Name          string    `json:"user_name"`
-	Email         string    `json:"email"`
-	Ages          int       `json:"ages"`
-	Sex           string    `json:"sex"`
-	Password      string    `json:"password"`
-	Date_Created  time.Time `json:"date_created"`
+	Id           bson.ObjectId `bson:"_id,omitempty" json:"id"`
+	Name         string        `json:"user_name"`
+	Email        string        `json:"email"`
+	Ages         int           `json:"ages"`
+	Sex          string        `json:"sex"`
+	Password     string        `json:"password"`
+	Date_Created time.Time     `json:"date_created"`
 }
 
 func (c *Connection) valid() bool {
-	return len(c.Connection_ID) > 0 && len(c.Name) > 0 && len(c.Email) > 0
+	return len(c.Id) > 0 && len(c.Name) > 0 && len(c.Email) > 0
 }
 
 func (c *Connection) printConnectionDetails() {
