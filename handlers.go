@@ -1,9 +1,10 @@
 package main
 
 import (
-	//"encoding/json"
+	"encoding/json"
 	"fmt"
-
+	"gopkg.in/mgo.v2/bson"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -25,7 +26,7 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 	userAges, _ := strconv.Atoi(ages)
 
 	connection := &Connection{Name: name, Email: email, Ages: userAges, Sex: sex, Password: password, Date_Created: time.Now()}
-	connection.CreateNewConnection()
+	CreateNewConnection(connection)
 }
 
 func SignOut(w http.ResponseWriter, r *http.Request) {
@@ -34,8 +35,33 @@ func SignOut(w http.ResponseWriter, r *http.Request) {
 }
 
 func Login(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	fmt.Println(vars["token"])
+	email := r.FormValue("email")
+	password := r.FormValue("password")
+
+	connection := LoginWithCredentials(email, password)
+	userID := fmt.Sprintf("%x", string(connection.Id))
+	log.Println(userID)
+
+	if connection != nil {
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.WriteHeader(http.StatusOK)
+
+		userMap := make(map[string]string)
+		userMap["token"] = userID
+
+		if err := json.NewEncoder(w).Encode(userMap); err != nil {
+			panic(err)
+		}
+
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusNotFound)
+	if err := json.NewEncoder(w).Encode(jsonErr{Code: http.StatusNotFound, Text: "Not Found"}); err != nil {
+		panic(err)
+	}
+
 }
 
 func AddTask(w http.ResponseWriter, r *http.Request) {
@@ -48,8 +74,8 @@ func AddTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	todo := &Todo{Title: todoTitle, Body: todoBody, Completed: false, Due: time.Now()}
-	todo.CreateNewToDO()
+	todo := &Todo{UserID: bson.ObjectIdHex(token), Title: todoTitle, Body: todoBody, Completed: false, Due: time.Now()}
+	CreateNewToDO(todo)
 }
 
 func RemoveTask(w http.ResponseWriter, r *http.Request) {
@@ -65,6 +91,23 @@ func UpdateTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func ListTasks(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	fmt.Println(vars["token"])
+	token := r.FormValue("token")
+
+	todos := ListAllTasks(token)
+
+	if len(todos) > 0 {
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.WriteHeader(http.StatusOK)
+		if err := json.NewEncoder(w).Encode(todos); err != nil {
+			panic(err)
+		}
+
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusNotFound)
+	if err := json.NewEncoder(w).Encode(jsonErr{Code: http.StatusNotFound, Text: "Not Found"}); err != nil {
+		panic(err)
+	}
 }
