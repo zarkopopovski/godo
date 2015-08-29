@@ -31,7 +31,7 @@ func CreateNewConnection(c *Connection) bool {
 	return true
 }
 
-func CreateNewToDO(t *Todo) {
+func CreateNewTask(t *Todo) {
 	session := OpenConnectionSession()
 	defer session.Close()
 
@@ -64,11 +64,7 @@ func LoginWithCredentials(email string, password string) *Connection {
 	var connection *Connection
 
 	c := session.DB("godo").C("userdata")
-	err := c.Find(
-		bson.M{"email": email,
-			"$and": []interface{}{
-				bson.M{"password": password},
-			}}).One(&connection)
+	err := c.Find(bson.M{"email": email, "$and": []interface{}{bson.M{"password": password}}}).One(&connection)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -76,14 +72,26 @@ func LoginWithCredentials(email string, password string) *Connection {
 	return connection
 }
 
-func (t *Todo) DeleteTask() {
-	session, err := mgo.Dial("127.0.0.1")
-	if err != nil {
-		panic(err)
-	}
+func DeleteTask(token string, todoID string) {
+	session := OpenConnectionSession()
 	defer session.Close()
-	session.SetMode(mgo.Monotonic, true)
 
-	//c := session.DB("godo").C("usertasks")
+	c := session.DB("godo").C("usertasks")
+	err := c.Remove(bson.M{"_id": bson.ObjectIdHex(todoID), "$and": []interface{}{bson.M{"user_id": bson.ObjectIdHex(token)}}})
 
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func UpdateExistingTask(todo *Todo) {
+	session := OpenConnectionSession()
+	defer session.Close()
+
+	c := session.DB("godo").C("usertasks")
+	err := c.UpdateId(todo.Id, todo)
+
+	if err != nil {
+		log.Fatal(err)
+	}
 }

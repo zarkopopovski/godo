@@ -75,19 +75,34 @@ func AddTask(w http.ResponseWriter, r *http.Request) {
 	}
 
 	todo := &Todo{UserID: bson.ObjectIdHex(token), Title: todoTitle, Body: todoBody, Completed: false, Due: time.Now()}
-	CreateNewToDO(todo)
+	CreateNewTask(todo)
 }
 
 func RemoveTask(w http.ResponseWriter, r *http.Request) {
-	//token := r.FormValue("token")
-	//todoID := r.FormValue("todo_id")
+	token := r.FormValue("token")
+	todoID := r.FormValue("todo_id")
 
-	//DeleteTask(token, todoID)
+	DeleteTask(token, todoID)
 }
 
 func UpdateTask(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	fmt.Println(vars["token"])
+	token := r.FormValue("token")
+	todoID := r.FormValue("todo_id")
+	todoTitle := r.FormValue("todo_title")
+	todoBody := r.FormValue("todo_body")
+
+	todoCompleted, _ := strconv.ParseBool(r.FormValue("complete"))
+	//todoDueDate := r.FormValue("due_date")
+
+	todo := &Todo{
+		Id:        bson.ObjectIdHex(todoID),
+		UserID:    bson.ObjectIdHex(token),
+		Title:     todoTitle,
+		Body:      todoBody,
+		Completed: todoCompleted,
+		Due:       time.Now()}
+
+	UpdateExistingTask(todo)
 }
 
 func ListTasks(w http.ResponseWriter, r *http.Request) {
