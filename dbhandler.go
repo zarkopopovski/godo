@@ -31,7 +31,7 @@ func CreateNewConnection(c *Connection) bool {
 	return true
 }
 
-func CreateNewTask(t *Todo) {
+func CreateNewTask(t *Todo) bool {
 	session := OpenConnectionSession()
 	defer session.Close()
 
@@ -39,7 +39,10 @@ func CreateNewTask(t *Todo) {
 	err := c.Insert(t)
 	if err != nil {
 		log.Fatal(err)
+		return false
 	}
+
+	return true
 }
 
 func ListAllTasks(token string) []Todo {
@@ -72,7 +75,7 @@ func LoginWithCredentials(email string, password string) *Connection {
 	return connection
 }
 
-func DeleteTask(token string, todoID string) {
+func DeleteTask(token string, todoID string) bool {
 	session := OpenConnectionSession()
 	defer session.Close()
 
@@ -81,10 +84,13 @@ func DeleteTask(token string, todoID string) {
 
 	if err != nil {
 		log.Fatal(err)
+		return false
 	}
+
+	return true
 }
 
-func UpdateExistingTask(todo *Todo) {
+func UpdateExistingTask(todo *Todo) bool {
 	session := OpenConnectionSession()
 	defer session.Close()
 
@@ -93,5 +99,8 @@ func UpdateExistingTask(todo *Todo) {
 
 	if err != nil {
 		log.Fatal(err)
+		return false
 	}
+
+	return true
 }
