@@ -6,19 +6,35 @@ import (
 	"log"
 )
 
-func OpenConnectionSession() *mgo.Session {
-	session, err := mgo.Dial("127.0.0.1")
+type MongoConnection struct {
+	dbSession *mgo.Session
+}
+
+func OpenConnectionSession() (mongoConnection *MongoConnection) {
+	mongoConnection = new(MongoConnection)
+	mongoConnection.createNewDBConnection()
+
+	return
+}
+
+func (mConnection *MongoConnection) createNewDBConnection() (err error) {
+	mConnection.dbSession, err = mgo.Dial("127.0.0.1")
 	if err != nil {
 		panic(err)
 	}
 
-	session.SetMode(mgo.Monotonic, true)
+	mConnection.dbSession.SetMode(mgo.Monotonic, true)
 
-	return session
+	return
 }
 
-func CreateNewConnection(c *Connection) bool {
-	session := OpenConnectionSession()
+func (mConnection *MongoConnection) CreateNewConnection(c *Connection) bool {
+
+	if mConnection.dbSession == nil {
+		return false
+	}
+
+	session := mConnection.dbSession.Copy()
 	defer session.Close()
 
 	collection := session.DB("godo").C("userdata")
@@ -31,8 +47,13 @@ func CreateNewConnection(c *Connection) bool {
 	return true
 }
 
-func CreateNewTask(t *Todo) bool {
-	session := OpenConnectionSession()
+func (mConnection *MongoConnection) CreateNewTask(t *Todo) bool {
+
+	if mConnection.dbSession == nil {
+		return false
+	}
+
+	session := mConnection.dbSession.Copy()
 	defer session.Close()
 
 	c := session.DB("godo").C("usertasks")
@@ -45,8 +66,13 @@ func CreateNewTask(t *Todo) bool {
 	return true
 }
 
-func ListAllTasks(token string) []Todo {
-	session := OpenConnectionSession()
+func (mConnection *MongoConnection) ListAllTasks(token string) []Todo {
+
+	if mConnection.dbSession == nil {
+		return nil
+	}
+
+	session := mConnection.dbSession.Copy()
 	defer session.Close()
 
 	var todos []Todo
@@ -60,8 +86,13 @@ func ListAllTasks(token string) []Todo {
 	return todos
 }
 
-func LoginWithCredentials(email string, password string) *Connection {
-	session := OpenConnectionSession()
+func (mConnection *MongoConnection) LoginWithCredentials(email string, password string) *Connection {
+
+	if mConnection.dbSession == nil {
+		return nil
+	}
+
+	session := mConnection.dbSession.Copy()
 	defer session.Close()
 
 	var connection *Connection
@@ -75,8 +106,13 @@ func LoginWithCredentials(email string, password string) *Connection {
 	return connection
 }
 
-func DeleteTask(token string, todoID string) bool {
-	session := OpenConnectionSession()
+func (mConnection *MongoConnection) DeleteTask(token string, todoID string) bool {
+
+	if mConnection.dbSession == nil {
+		return false
+	}
+
+	session := mConnection.dbSession.Copy()
 	defer session.Close()
 
 	c := session.DB("godo").C("usertasks")
@@ -90,8 +126,13 @@ func DeleteTask(token string, todoID string) bool {
 	return true
 }
 
-func UpdateExistingTask(todo *Todo) bool {
-	session := OpenConnectionSession()
+func (mConnection *MongoConnection) UpdateExistingTask(todo *Todo) bool {
+
+	if mConnection.dbSession == nil {
+		return false
+	}
+
+	session := mConnection.dbSession.Copy()
 	defer session.Close()
 
 	c := session.DB("godo").C("usertasks")

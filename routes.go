@@ -11,13 +11,17 @@ type Route struct {
 
 type Routes []Route
 
-var routes = Routes{
-	Route{"Index", "GET", "/", Index},
-	Route{"SignIn", "POST", "/signin", SignIn},
-	Route{"SignOut", "POST", "/signout", SignOut},
-	Route{"Login", "POST", "/login", Login},
-	Route{"AddTask", "POST", "/addtask", AddTask},
-	Route{"RemoveTask", "POST", "/removetask", RemoveTask},
-	Route{"UpdateTask", "POST", "/updatetask", UpdateTask},
-	Route{"ListTasks", "POST", "/listtasks", ListTasks},
+func RoutesMap(api *ApiConnection) Routes {
+	var routes = Routes{
+		Route{"Index", "GET", "/", api.Index},
+		Route{"SignIn", "POST", "/signin", api.SignIn},
+		Route{"SignOut", "POST", "/signout", api.SignOut},
+		Route{"Login", "POST", "/login", api.Login},
+		Route{"AddTask", "POST", "/addtask", api.AddTask},
+		Route{"RemoveTask", "POST", "/removetask", api.RemoveTask},
+		Route{"UpdateTask", "POST", "/updatetask", api.UpdateTask},
+		Route{"ListTasks", "POST", "/listtasks", api.ListTasks},
+	}
+
+	return routes
 }

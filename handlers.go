@@ -12,11 +12,22 @@ import (
 	"github.com/gorilla/mux"
 )
 
-func Index(w http.ResponseWriter, r *http.Request) {
+type ApiConnection struct {
+	dbConnection *MongoConnection
+}
+
+func CreateApiConnection() *ApiConnection {
+	API := &ApiConnection{
+		dbConnection: OpenConnectionSession(),
+	}
+	return API
+}
+
+func (c *ApiConnection) Index(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Welcome!\n")
 }
 
-func SignIn(w http.ResponseWriter, r *http.Request) {
+func (c *ApiConnection) SignIn(w http.ResponseWriter, r *http.Request) {
 	name := r.FormValue("name")
 	email := r.FormValue("email")
 	ages := r.FormValue("ages")
@@ -26,7 +37,8 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 	userAges, _ := strconv.Atoi(ages)
 
 	connection := &Connection{Name: name, Email: email, Ages: userAges, Sex: sex, Password: password, Date_Created: time.Now()}
-	err := CreateNewConnection(connection)
+
+	err := c.dbConnection.CreateNewConnection(connection)
 
 	if err {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
@@ -42,16 +54,16 @@ func SignIn(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func SignOut(w http.ResponseWriter, r *http.Request) {
+func (c *ApiConnection) SignOut(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	fmt.Println(vars["token"])
 }
 
-func Login(w http.ResponseWriter, r *http.Request) {
+func (c *ApiConnection) Login(w http.ResponseWriter, r *http.Request) {
 	email := r.FormValue("email")
 	password := r.FormValue("password")
 
-	connection := LoginWithCredentials(email, password)
+	connection := c.dbConnection.LoginWithCredentials(email, password)
 	userID := fmt.Sprintf("%x", string(connection.Id))
 	log.Println(userID)
 
@@ -77,7 +89,7 @@ func Login(w http.ResponseWriter, r *http.Request) {
 
 }
 
-func AddTask(w http.ResponseWriter, r *http.Request) {
+func (c *ApiConnection) AddTask(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	todoTitle := r.FormValue("todo_title")
 	todoBody := r.FormValue("todo_body")
@@ -96,16 +108,18 @@ func AddTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	timeFormatted, _ := time.Parse(time.RFC3339, todoDueDate)
+
 	todo := &Todo{
 		UserID:    bson.ObjectIdHex(token),
 		Title:     todoTitle,
 		Body:      todoBody,
 		Completed: todoCompleted,
-		Due:       time.Parse(time.RFC3339, todoDueDate)}
+		Due:       timeFormatted}
 
-	err := CreateNewTask(todo)
+	err := c.dbConnection.CreateNewTask(todo)
 
-	if err {
+	if !err {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(http.StatusNotFound)
 		if err := json.NewEncoder(w).Encode(jsonErr{Code: http.StatusNotFound, Text: "Error saving"}); err != nil {
@@ -117,13 +131,13 @@ func AddTask(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func RemoveTask(w http.ResponseWriter, r *http.Request) {
+func (c *ApiConnection) RemoveTask(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	todoID := r.FormValue("todo_id")
 
-	err := DeleteTask(token, todoID)
+	err := c.dbConnection.DeleteTask(token, todoID)
 
-	if err {
+	if !err {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(http.StatusNotFound)
 		if err := json.NewEncoder(w).Encode(jsonErr{Code: http.StatusNotFound, Text: "Error removing task"}); err != nil {
@@ -135,7 +149,7 @@ func RemoveTask(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func UpdateTask(w http.ResponseWriter, r *http.Request) {
+func (c *ApiConnection) UpdateTask(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 	todoID := r.FormValue("todo_id")
 	todoTitle := r.FormValue("todo_title")
@@ -144,17 +158,19 @@ func UpdateTask(w http.ResponseWriter, r *http.Request) {
 	todoCompleted, _ := strconv.ParseBool(r.FormValue("complete"))
 	todoDueDate := r.FormValue("due_date")
 
+	timeFormatted, _ := time.Parse(time.RFC3339, todoDueDate)
+
 	todo := &Todo{
 		Id:        bson.ObjectIdHex(todoID),
 		UserID:    bson.ObjectIdHex(token),
 		Title:     todoTitle,
 		Body:      todoBody,
 		Completed: todoCompleted,
-		Due:       time.Parse(time.RFC3339, todoDueDate)}
+		Due:       timeFormatted}
 
-	err := UpdateExistingTask(todo)
+	err := c.dbConnection.UpdateExistingTask(todo)
 
-	if err {
+	if !err {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(http.StatusNotFound)
 		if err := json.NewEncoder(w).Encode(jsonErr{Code: http.StatusNotFound, Text: "Error updating task"}); err != nil {
@@ -166,10 +182,10 @@ func UpdateTask(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func ListTasks(w http.ResponseWriter, r *http.Request) {
+func (c *ApiConnection) ListTasks(w http.ResponseWriter, r *http.Request) {
 	token := r.FormValue("token")
 
-	todos := ListAllTasks(token)
+	todos := c.dbConnection.ListAllTasks(token)
 
 	if len(todos) > 0 {
 		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
